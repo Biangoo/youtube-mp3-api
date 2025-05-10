@@ -6,6 +6,7 @@ import time
 
 app = Flask(__name__)
 
+
 def get_video_info(query):
     # If not a direct YouTube URL, treat as search
     if not query.startswith("http"):
@@ -19,23 +20,28 @@ def get_video_info(query):
             info = info['entries'][0]
         return info
 
+
 def download_audio(url):
     filename = "audio"
     ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': filename,
+        'format':
+        'bestaudio/best',
+        'outtmpl':
+        filename,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'quiet': True
+        'quiet':
+        True
     }
 
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
     return f"{filename}.mp3"
+
 
 def upload_to_catbox(file_path):
     with open(file_path, 'rb') as f:
@@ -45,6 +51,7 @@ def upload_to_catbox(file_path):
                                  data=data,
                                  files=files)
         return response.text.strip()
+
 
 @app.route("/ytmp3", methods=["POST"])
 def convert_to_mp3():
@@ -75,6 +82,7 @@ def convert_to_mp3():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
