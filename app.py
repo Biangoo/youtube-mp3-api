@@ -12,7 +12,7 @@ def get_video_info(query):
     if not query.startswith("http"):
         query = f"ytsearch:{query}"
 
-    ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'noplaylist': True, 'cookiefile': 'youtube_cookies.txt', 'nooverwrites': True, 'nocheckcertificate': True}
+    ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'noplaylist': True}
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(query, download=False)
@@ -34,10 +34,7 @@ def download_audio(url):
             'preferredquality': '192',
         }],
         'quiet':
-        True,
-        'cookiefile': 'youtube_cookies.txt'
-        'nooverwrites': True,  # prevent modifying any files
-        'nocheckcertificate': True  # optional, helps with some HTTPS issues
+        True
     }
 
     with YoutubeDL(ydl_opts) as ydl:
