@@ -1,8 +1,15 @@
 {
+  "version": 2,
   "builds": [
-    { "src": "app.py", "use": "@vercel/python" }
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
   ],
   "routes": [
-    { "src": "/ytmp3", "methods": ["POST"], "dest": "/app.py" }
+    {
+      "src": "/ytmp3",
+      "dest": "/app.py"
+    }
   ]
 }
