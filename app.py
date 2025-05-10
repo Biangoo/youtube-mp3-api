@@ -1,67 +1,89 @@
 from flask import Flask, request, jsonify
 from yt_dlp import YoutubeDL
-import os, requests, time
-from datetime import datetime
+import requests
+import os
+import time
 
 app = Flask(__name__)
 
-@app.route('/getmp3')
-def get_mp3():
-    query = request.args.get('query')
-    if not query:
-        return jsonify({'error': 'Missing "query" parameter'}), 400
 
-    yt_url = query if query.startswith("http") else f"ytsearch:{query}"
-    base_name = 'audio'
+def get_video_info(query):
+    # If not a direct YouTube URL, treat as search
+    if not query.startswith("http"):
+        query = f"ytsearch:{query}"
 
+    ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'noplaylist': True}
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(query, download=False)
+        if 'entries' in info:
+            info = info['entries'][0]
+        return info
+
+
+def download_audio(url):
+    filename = "audio"
     ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': base_name,
+        'format':
+        'bestaudio/best',
+        'outtmpl':
+        filename,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
-        'quiet': True
+        'quiet':
+        True
     }
 
+    with YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    return f"{filename}.mp3"
+
+
+def upload_to_catbox(file_path):
+    with open(file_path, 'rb') as f:
+        files = {'fileToUpload': (os.path.basename(file_path), f)}
+        data = {'reqtype': 'fileupload'}
+        response = requests.post('https://catbox.moe/user/api.php',
+                                 data=data,
+                                 files=files)
+        return response.text.strip()
+
+
+@app.route("/ytmp3", methods=["POST"])
+def convert_to_mp3():
     try:
-        with YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(yt_url, download=False)
-            if 'entries' in info:
-                info = info['entries'][0]
+        data = request.get_json()
+        query = data.get("query")
 
-            title = info.get('title', 'Unknown Title')
-            uploader = info.get('uploader', 'Unknown Uploader')
-            duration = time.strftime('%H:%M:%S', time.gmtime(info.get('duration', 0)))
-            video_url = info.get('webpage_url')
+        info = get_video_info(query)
+        title = info.get("title")
+        uploader = info.get("uploader")
+        duration = time.strftime('%H:%M:%S',
+                                 time.gmtime(info.get("duration", 0)))
+        url = info.get("webpage_url")
 
-            # Download the audio
-            ydl.download([yt_url])
+        mp3_file = download_audio(url)
+        direct_link = upload_to_catbox(mp3_file)
 
-        # Upload to Catbox
-        mp3_filename = f"{base_name}.mp3"
-        with open(mp3_filename, 'rb') as f:
-            files = {'fileToUpload': (os.path.basename(mp3_filename), f)}
-            data = {'reqtype': 'fileupload'}
-            res = requests.post('https://catbox.moe/user/api.php', data=data, files=files)
+        if os.path.exists(mp3_file):
+            os.remove(mp3_file)
 
-        if res.status_code == 200 and res.text.startswith("https"):
-            catbox_url = res.text.strip()
-            os.remove(mp3_filename)
-            return jsonify({
-                'title': title,
-                'uploader': uploader,
-                'duration': duration,
-                'video_url': video_url,
-                'mp3_url': catbox_url.replace("https", "http")
-            })
-        else:
-            return jsonify({'error': 'Failed to upload to Catbox'}), 500
+        return jsonify({
+            "title": title,
+            "uploader": uploader,
+            "duration": duration,
+            "youtube_url": url,
+            "mp3_url": direct_link
+        })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
