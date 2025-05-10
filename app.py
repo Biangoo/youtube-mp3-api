@@ -6,13 +6,13 @@ import time
 
 app = Flask(__name__)
 
-
+cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
 def get_video_info(query):
     # If not a direct YouTube URL, treat as search
     if not query.startswith("http"):
         query = f"ytsearch:{query}"
 
-    ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'noplaylist': True, 'cookiefile': 'cookies.txt'}
+    ydl_opts = {'format': 'bestaudio/best', 'quiet': True, 'noplaylist': True, 'cookiefile': cookie_path}
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(query, download=False)
@@ -20,6 +20,7 @@ def get_video_info(query):
             info = info['entries'][0]
         return info
 
+cookie_path = os.path.join(os.path.dirname(__file__), "cookies.txt")
 
 def download_audio(url):
     filename = "audio"
@@ -35,7 +36,7 @@ def download_audio(url):
         }],
         'quiet':
         True
-        'cookiefile': 'cookies.txt'
+        'cookiefile': cookie_path
     }
 
     with YoutubeDL(ydl_opts) as ydl:
