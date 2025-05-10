@@ -2,7 +2,7 @@
   "builds": [
     { "src": "app.py", "use": "@vercel/python" }
   ],
-  "includeFiles": [
-    "youtube_cookies.txt"
+  "routes": [
+    { "src": "/ytmp3", "methods": ["POST"], "dest": "/app.py" }
   ]
 }
